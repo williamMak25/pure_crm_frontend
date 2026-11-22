@@ -1,0 +1,30 @@
+# Development frontend: Vite dev server with live reload (http://localhost:5173).
+#   docker compose -f docker-compose.dev.yml up -d --build    start
+#   docker compose -f docker-compose.dev.yml logs -f web      follow the Vite logs
+#   docker compose -f docker-compose.dev.yml down             stop
+# Start the backend first (pure-erp-api: docker compose -f docker-compose.dev.yml up -d).
+# Vite proxies /api to it through the host on :8100; set API_PROXY_TARGET to point elsewhere.
+# Reads .env like a local `npm run dev` does (API_MOCK etc.).
+
+name: pure-erp-web
+
+services:
+  web:
+    image: pure-erp-web:dev
+    build:
+      context: .
+      target: dev
+    environment:
+      API_PROXY_TARGET: ${API_PROXY_TARGET:-http://host.docker.internal:8100}
+      # inotify events don't cross bind mounts reliably on every host
+      CHOKIDAR_USEPOLLING: "true"
+    ports:
+      - "${WEB_DEV_HOST_PORT:-5173}:5173"
+    volumes:
+      - .:/app
+      # keep the container's own node_modules and SvelteKit output, not the host's
+      - /app/node_modules
+      - /app/.svelte-kit
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped

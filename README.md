@@ -24,6 +24,30 @@ Variables are declared in `src/env.ts` (SvelteKit 3 `defineEnvVars`) and set in 
 
 The included `.env` has `API_MOCK=true`, so the app runs straight away with the Figma content. With `API_MOCK=false` the mock module is never loaded: all data comes from `API_BASE_URL` through the service layer.
 
+### Docker
+
+Start the backend first (`pure-erp-api`). Both stacks reach it through the host on `:8100`.
+
+```bash
+# development: Vite with live reload on http://localhost:5173, reads .env
+docker compose -f docker-compose.dev.yml up -d --build
+
+# production-like: static build served by nginx on http://localhost:8080
+docker compose up -d --build
+```
+
+The production image (`Dockerfile`, target `prod`) builds the app with `adapter-static` and serves it with nginx (`docker/nginx.conf.template`). nginx falls back to `index.html` for SPA routes and proxies `/api` to the backend, so session cookies stay same-origin, the same way the Vite dev proxy does it.
+
+| Variable           | Where   | Default                            | Purpose                                         |
+| ------------------ | ------- | ---------------------------------- | ----------------------------------------------- |
+| `API_UPSTREAM`     | prod    | `http://host.docker.internal:8100` | Backend nginx proxies `/api` to (runtime)       |
+| `API_BASE_URL`     | prod    | `/api`                             | Build arg: baked into the bundle                |
+| `WEB_HOST_PORT`    | prod    | `8080`                             | Host port for nginx                             |
+| `API_PROXY_TARGET` | dev     | `http://host.docker.internal:8100` | Backend for the Vite `/api` proxy               |
+| `WEB_DEV_HOST_PORT`| dev     | `5173`                             | Host port for Vite                              |
+
+`API_MOCK` is always `false` in the production image. Because `API_BASE_URL` is a static public variable, changing it requires a rebuild.
+
 ## Project structure
 
 ```

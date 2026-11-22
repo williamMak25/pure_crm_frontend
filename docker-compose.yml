@@ -1,0 +1,27 @@
+# Production-like frontend: static build served by nginx, /api proxied to the backend.
+#   docker compose up -d --build        build and start (http://localhost:8080)
+#   docker compose logs -f web          follow the nginx logs
+#   docker compose down                 stop
+# Start the backend first (pure-erp-api: docker compose up -d). By default nginx reaches it
+# through the host on :8100; set API_UPSTREAM to point elsewhere.
+# For development with live reload use docker-compose.dev.yml instead.
+
+name: pure-erp-web
+
+services:
+  web:
+    build:
+      context: .
+      target: prod
+      args:
+        API_BASE_URL: ${API_BASE_URL:-/api}
+        API_MOCK: "false"
+    environment:
+      API_UPSTREAM: ${API_UPSTREAM:-http://host.docker.internal:8100}
+    ports:
+      - "${WEB_HOST_PORT:-127.0.0.1:3100}:80"
+    networks: [default, pure-erp]
+    restart: unless-stopped
+networks:
+  pure-erp:
+    external: true
