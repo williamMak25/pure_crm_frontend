@@ -1,0 +1,39 @@
+{
+	"name": "pure-education-erp",
+	"version": "0.0.1",
+	"private": true,
+	"type": "module",
+	"imports": {
+		"#lib/*": "./src/lib/*"
+	},
+	"scripts": {
+		"dev": "vite dev",
+		"build": "vite build",
+		"preview": "vite preview",
+		"prepare": "svelte-kit sync || echo ''",
+		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
+		"icons": "node scripts/build-icons.mjs"
+	},
+	"devDependencies": {
+		"@fontsource-variable/inter": "^5.3.0",
+		"@iconify-json/lucide": "^1.2.153",
+		"@iconify/svelte": "^5.2.4",
+		"@skeletonlabs/skeleton": "^5.0.4",
+		"@skeletonlabs/skeleton-svelte": "^5.0.4",
+		"@sveltejs/adapter-auto": "^8.0.0",
+		"@sveltejs/kit": "^3.0.0",
+		"@sveltejs/vite-plugin-svelte": "^7.2.0",
+		"@tailwindcss/vite": "^4.3.5",
+		"svelte": "^5.57.2",
+		"svelte-check": "^4.6.0",
+		"tailwindcss": "^4.3.5",
+		"typescript": "^6.0.3",
+		"vite": "^8.3.0"
+	},
+	"dependencies": {
+		"@tanstack/svelte-query": "^6.4.1",
+		"chart.js": "^4.6.1",
+		"svelte-sonner": "^1.2.3"
+	}
+}
