@@ -17,7 +17,7 @@ services:
         API_BASE_URL: ${API_BASE_URL:-/api}
         API_MOCK: "false"
     environment:
-      API_UPSTREAM: ${API_UPSTREAM:-http://host.docker.internal:8000}
+      API_UPSTREAM: ${API_UPSTREAM:-http://pure-erp-api:8000}
     ports:
       - "${WEB_HOST_PORT:-127.0.0.1:3100}:80"
     networks: [default, pure-erp]
