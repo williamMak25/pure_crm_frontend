@@ -1,7 +1,7 @@
 /**
  * DEVELOPMENT-ONLY mock API. Reached only through `request()` in services/http.ts
  * when API_MOCK=true. Emulates latency so loading skeletons are visible.
- * Auth, /me, /businesses, CRM and Projects are served by the real API (LIVE_PREFIXES).
+ * Auth, /me, /businesses, CRM, Projects and Settings are served by the real API (LIVE_PREFIXES).
  */
 import { ENDPOINTS } from '#lib/constants/endpoints.ts';
 import { ApiError, type RequestOptions } from '#lib/services/http.ts';
@@ -43,7 +43,6 @@ const collections: Record<string, object[]> = {
 	[ENDPOINTS.payroll]: db.payroll,
 	[ENDPOINTS.salaryHistory]: db.salaryHistory,
 	[ENDPOINTS.departments]: db.departments,
-	[ENDPOINTS.users]: db.users
 };
 
 export async function handleMockRequest<T>(method: string, path: string, opts: RequestOptions): Promise<T> {
@@ -61,20 +60,13 @@ export async function handleMockRequest<T>(method: string, path: string, opts: R
 			case ENDPOINTS.dashboardUpcoming: return out(db.upcoming);
 			case ENDPOINTS.dashboardAttention: return out(db.attention);
 			case ENDPOINTS.cashFlow: return out(db.cashFlow((q.range as TrendRange) ?? 'monthly'));
-			case ENDPOINTS.roles: return out(db.roles);
-			case ENDPOINTS.company: return out(db.company);
-			case ENDPOINTS.security: return out(db.security);
 		}
 		if (collections[path]) return out(paginate(collections[path], q));
 
-		const perm = path.match(/^\/settings\/roles\/([^/]+)\/permissions$/);
-		if (perm) return out(db.permissions(perm[1]));
 		const order = path.match(/^\/sales\/orders\/([^/]+)$/);
 		if (order) return out(db.orderDetail(order[1]));
 		const quotation = path.match(/^\/sales\/quotations\/([^/]+)$/);
 		if (quotation) return out(db.quotationDetail(quotation[1]));
-		const user = path.match(/^\/settings\/users\/([^/]+)$/);
-		if (user) return out(db.userDetail(user[1]));
 		const item = path.match(/^(.*)\/([^/]+)$/);
 		if (item && collections[item[1]]) {
 			const found = collections[item[1]].find((r) => (r as { id: string }).id === item[2]);

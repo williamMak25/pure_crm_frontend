@@ -37,7 +37,7 @@
 	}
 </script>
 
-<svelte:head><title>Sign in · PURE Education ERP</title></svelte:head>
+<svelte:head><title>Sign in · PURE ERP</title></svelte:head>
 
 <div class="grid min-h-dvh place-items-center bg-neutral-50 px-4">
 	<div class="flex w-full max-w-[400px] flex-col gap-6 rounded-xl border border-neutral-200 bg-white p-6 sm:p-8">
@@ -45,7 +45,7 @@
 			<img src="/images/logo.png" alt="" class="h-12 w-auto" />
 			<div class="flex flex-col gap-1">
 				<h1 class="text-xl font-semibold text-neutral-800">Sign in</h1>
-				<p class="text-sm text-neutral-500">PURE Education ERP</p>
+				<p class="text-sm text-neutral-500">PURE ERP</p>
 			</div>
 		</div>
 

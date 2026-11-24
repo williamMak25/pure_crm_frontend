@@ -1,6 +1,6 @@
-# PURE Education ERP: Admin Dashboard
+# PURE ERP: Admin Dashboard
 
-SvelteKit implementation of the **Pure Education (ERP)** Figma file.
+SvelteKit implementation of the **PURE ERP** Figma file.
 
 **Stack:** Svelte 5 (runes) · SvelteKit 3 · Skeleton UI 5 · Tailwind CSS 4 · TanStack Query (svelte-query 6) · Chart.js 4 · Iconify (Lucide, bundled offline) · svelte-sonner (toasts) · TypeScript
 
@@ -68,7 +68,7 @@ src/
 │   │   ├── dashboard/ crm/ projects/ sales/ settings/
 │   ├── services/                # http client + one service per domain (no UI code)
 │   ├── queries/                 # TanStack Query keys, query/mutation factories, QueryClient config
-│   ├── stores/                  # ui.svelte.ts (sidebar, mobile nav, business switcher)
+│   ├── stores/                  # ui.svelte.ts (sidebar, mobile nav, company switcher)
 │   ├── constants/               # navigation, endpoints, form schemas, status tones, icons
 │   ├── types/                   # domain types
 │   ├── utils/                   # format, validation, debounce, cn
@@ -85,7 +85,7 @@ src/
 | ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Overview         | `/` stat cards, Revenue & Expenses chart (Weekly/Monthly/Yearly), activities, outstanding payments, upcoming work, attention, recent sales table                                                                              |
 | CRM & Contacts   | `/crm/contacts`, `/crm/pipeline` (kanban), `/crm/universities`, `/crm/consultants`                                                                                                                                          |
-| Project & Board  | `/projects` (board grid, search, business/status filters, Create Board), `/projects/[id]` (lists, cards, add list/task, card actions menu, Move Card, Share Board, Change Visibility, Filter drawer, card detail with message/note/activity). Completed boards open in **viewer** (read-only) mode |
+| Project & Board  | `/projects` (board grid, search, status filter, Create Board), `/projects/[id]` (lists, cards, add list/task, card actions menu, Move Card, Share Board, Change Visibility, Filter drawer, card detail with message/note/activity). Completed boards open in **viewer** (read-only) mode |
 | Sales            | `/sales/orders`, `/sales/orders/[id]` (Order Details + Edit Order), `/sales/quotations`, `/sales/items`                                                                                                                      |
 | Invoices         | `/invoices/customer-invoices`, `/invoices/payments`, `/invoices/history`                                                                                                                                                     |
 | Finance          | `/finance/income-expense`, `/finance/transactions`, `/finance/cash-flow` (bar + doughnut charts)                                                                                                                             |
@@ -96,7 +96,8 @@ Every list has search (debounced), page size, pagination, a "View" detail dialog
 
 ## Data layer
 
-- **Services** (`lib/services/*.service.ts`) wrap REST endpoints from `constants/endpoints.ts`. Lists return `{ items, total, page, pageSize }` and accept `page, pageSize, search, status, business`.
+- **Services** (`lib/services/*.service.ts`) wrap REST endpoints from `constants/endpoints.ts`. Lists return `{ items, total, page, pageSize }` and accept `page, pageSize, search, status`.
+- **Companies**: every switcher entry is a separate company. `http.ts` sends the selected company's id (`ui.companyId`, remembered in localStorage) as the `X-Company` header, and the API scopes every request to it. `useSwitchCompany()` (`lib/queries/company.ts`) changes company and resets all cached data, so pages, role and permissions reload.
 - **Queries** (`lib/queries`) use centralised keys (`queries/keys.ts`), `staleTime` 1 min for lists and 10 min for reference data, and `keepPreviousData` for pagination. Mutations invalidate their collection and show a toast. Moving a card is optimistic.
 - Change the backend contract in `constants/endpoints.ts` and `types/`; no component needs editing.
 

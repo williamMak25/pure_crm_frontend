@@ -13,12 +13,12 @@ export interface FormField {
 	options?: string[];
 	/** Span both columns (textareas, long inputs). */
 	full?: boolean;
+	/** Options loaded at runtime instead of `options`: the business units from the API. */
+	source?: 'businesses';
 }
 
-const BUSINESS = ['PURE Education', 'Anime House', 'GPM'];
-export const ROLE_NAMES = ['Super Admin', 'Admin', 'Manager', 'Accountant', 'HR', 'Staff'];
 const PAYMENT_METHODS = ['KBZ Pay', 'Wave Pay', 'AYA Pay', 'Cash', 'Bank Transfer'];
-const business = (): FormField => ({ name: 'business', label: 'Business', type: 'select', options: BUSINESS, required: true });
+const business = (): FormField => ({ name: 'business', label: 'Business', type: 'select', source: 'businesses', required: true });
 const status = (options: string[]): FormField => ({ name: 'status', label: 'Status', type: 'select', options });
 
 export const FORMS = {
@@ -27,11 +27,21 @@ export const FORMS = {
 		{ name: 'company', label: 'Company', required: true, placeholder: 'Enter company' },
 		{ name: 'email', label: 'Email', type: 'email', required: true, placeholder: 'name@example.com' },
 		{ name: 'phone', label: 'Phone Number', type: 'tel', placeholder: '09 xxx xxx xxx' },
-		business(),
 		{ name: 'owner', label: 'Assigned Owner', placeholder: "User's full name (blank = you)" },
 		{ name: 'followUpDate', label: 'Follow-up Date', type: 'date' },
-		status(['Lead', 'Active', 'Inactive', 'Archived']),
+		status(['Active', 'Inactive', 'Archived']),
 		{ name: 'notes', label: 'Notes', type: 'textarea', full: true, placeholder: 'Add a note' }
+	],
+	/** Leads tab. Choosing "New" sends the lead straight into the pipeline. */
+	lead: [
+		{ name: 'name', label: 'Lead Name', required: true, placeholder: 'Enter lead name' },
+		{ name: 'company', label: 'Company', placeholder: 'Enter company' },
+		{ name: 'email', label: 'Email', type: 'email', placeholder: 'name@example.com' },
+		{ name: 'phone', label: 'Phone Number', type: 'tel', placeholder: '09 xxx xxx xxx' },
+		{ name: 'owner', label: 'Assigned Owner', placeholder: "User's full name (blank = you)" },
+		{ name: 'followUpDate', label: 'Follow-up Date', type: 'date' },
+		status(['Open', 'Contacted', 'New', 'Lost']),
+		{ name: 'notes', label: 'Notes', type: 'textarea', full: true, placeholder: 'Where did this lead come from?' }
 	],
 	pipeline: [{ name: 'name', label: 'Stage Name', required: true, placeholder: 'e.g. Proposal', full: true }],
 	university: [
@@ -39,7 +49,6 @@ export const FORMS = {
 		{ name: 'country', label: 'Country', required: true, placeholder: 'Enter country' },
 		{ name: 'email', label: 'Email', type: 'email', required: true, placeholder: 'name@example.com' },
 		{ name: 'phone', label: 'Phone Number', type: 'tel', placeholder: 'Enter phone number' },
-		business(),
 		status(['Active', 'Pending', 'Inactive']),
 		{ name: 'website', label: 'Website', placeholder: 'https://', full: true }
 	],
@@ -49,7 +58,6 @@ export const FORMS = {
 		{ name: 'country', label: 'Country', required: true, placeholder: 'Enter country' },
 		{ name: 'email', label: 'Email', type: 'email', required: true, placeholder: 'name@example.com' },
 		{ name: 'phone', label: 'Phone Number', type: 'tel', placeholder: 'Enter phone number' },
-		business(),
 		status(['Active', 'Inactive'])
 	],
 	order: [
@@ -202,8 +210,8 @@ export const FORMS = {
 	user: [
 		{ name: 'name', label: 'Full Name', required: true, placeholder: 'Enter full name' },
 		{ name: 'email', label: 'Email', type: 'email', required: true, placeholder: 'name@example.com' },
-		{ name: 'role', label: 'Role', type: 'select', required: true, options: ROLE_NAMES },
-		business(),
+		// Role options are the selected company's roles, filled in by the users page.
+		{ name: 'role', label: 'Role', type: 'select', required: true, options: [] },
 		{ name: 'phone', label: 'Phone Number', type: 'tel', placeholder: '09 xxx xxx xxx' },
 		status(['Active', 'Inactive'])
 	]

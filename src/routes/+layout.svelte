@@ -16,7 +16,11 @@
   let isIntegrated = $state(false);
 
   $effect(() => {
-    if (!["/crm", "/projects"].some((p) => page.url.pathname.startsWith(p))) {
+    if (
+      !["/crm", "/projects", "/settings"].some((p) =>
+        page.url.pathname.startsWith(p)
+      )
+    ) {
       isIntegrated = false;
     } else {
       isIntegrated = true;
@@ -25,8 +29,8 @@
 </script>
 
 <svelte:head>
-  <title>PURE Education ERP</title>
-  <link rel="icon" href="/images/logo.png" />
+  <title>PURE ERP</title>
+  <link rel="icon" href="/images/favicon.png" />
 </svelte:head>
 
 <QueryClientProvider client={queryClient}>

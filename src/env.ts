@@ -4,7 +4,7 @@ export const variables = defineEnvVars({
 	API_BASE_URL: {
 		public: true,
 		static: true,
-		description: 'Base URL of the PURE ERP REST API, e.g. https://api.pure-education.com/v1',
+		description: 'Base URL of the PURE ERP REST API, e.g. https://api.example.com/v1',
 		schema: (value) => value || '/api'
 	},
 	API_MOCK: {

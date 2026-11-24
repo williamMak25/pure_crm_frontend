@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { useSwitchCompany } from '#lib/queries/company.ts';
 	import { createBusinessesQuery, createMeQuery } from '#lib/queries/dashboard.ts';
 	import { authService } from '#lib/services/index.ts';
 	import { ui } from '#lib/stores/ui.svelte.ts';
@@ -11,12 +12,23 @@
 	const me = createMeQuery();
 	let q = $state('');
 
-	const items = $derived((businesses.data ?? []).map((b) => ({ value: b.name, label: b.name })));
+	const switchCompany = useSwitchCompany();
+	const items = $derived((businesses.data ?? []).map((b) => ({ value: b.id, label: b.name })));
 
-	// Users only get the businesses they belong to; don't leave the switcher on one they can't open.
+	// Keep the switcher on a company the user belongs to: the remembered one, else the one the API
+	// picked for this session (`me.company`), else the first. Matching by id also follows renames.
 	$effect(() => {
 		const list = businesses.data;
-		if (list?.length && !list.some((b) => b.name === ui.business)) ui.business = list[0].name;
+		if (!list?.length || (!ui.companyId && !me.data)) return; // first visit: wait for the API's pick
+		const current =
+			list.find((b) => b.id === ui.companyId) ??
+			(ui.companyId ? undefined : list.find((b) => b.name === me.data?.company)) ??
+			list[0];
+		if (ui.companyId && current.id !== ui.companyId) switchCompany(current);
+		else {
+			ui.companyId = current.id;
+			ui.business = current.name;
+		}
 	});
 
 	let signingOut = $state(false);
@@ -47,10 +59,13 @@
 	{:else}
 		<Dropdown
 			{items}
-			selected={ui.business}
+			selected={ui.companyId}
 			placement="bottom-start"
-			onselect={(v) => (ui.business = v)}
-			triggerLabel="Switch business"
+			onselect={(id) => {
+				const company = businesses.data?.find((b) => b.id === id);
+				if (company) switchCompany(company);
+			}}
+			triggerLabel="Switch company"
 			triggerClass="flex h-[42px] w-[150px] items-center justify-between gap-2 rounded-lg border border-neutral-200 px-3 text-md text-neutral-800 hover:bg-neutral-50 sm:w-[174px]"
 		>
 			{#snippet trigger()}

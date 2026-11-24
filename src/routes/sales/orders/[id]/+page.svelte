@@ -41,7 +41,7 @@
 	);
 </script>
 
-<svelte:head><title>{order.data?.orderNo ?? 'Order'} · Order Details · PURE Education ERP</title></svelte:head>
+<svelte:head><title>{order.data?.orderNo ?? 'Order'} · Order Details · PURE ERP</title></svelte:head>
 
 <div class="flex flex-col gap-4">
 	<div class="flex items-start gap-2">

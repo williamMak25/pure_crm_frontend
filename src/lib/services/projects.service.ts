@@ -18,7 +18,7 @@ import { http } from './http';
 import { createResourceService } from './resource.service';
 
 export const boardService = {
-	...createResourceService<Board, { title: string; visibility: Visibility; business: string }>(ENDPOINTS.boards),
+	...createResourceService<Board, { title: string; visibility: Visibility }>(ENDPOINTS.boards),
 	detail: (id: ID, signal?: AbortSignal) => http.get<BoardDetail>(`${ENDPOINTS.boards}/${id}`, undefined, signal),
 	updateBoard: (id: ID, body: { title?: string; visibility?: Visibility }) =>
 		http.patch<BoardDetail>(`${ENDPOINTS.boards}/${id}`, body),

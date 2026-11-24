@@ -12,6 +12,7 @@
 		createToggleActivityMutation
 	} from '#lib/queries/modules.ts';
 	import type { ActivityKind, DealDetail, DealMessage } from '#lib/types/index.ts';
+	import { ui } from '#lib/stores/ui.svelte.ts';
 	import { debounced } from '#lib/utils/debounce.svelte.ts';
 	import { formatDate } from '#lib/utils/format.ts';
 	import { cn } from '#lib/utils/cn.ts';
@@ -32,7 +33,7 @@
 	const term = debounced(() => search);
 
 	const me = createMeQuery();
-	const people = createCrmPeopleQuery(() => deal.business);
+	const people = createCrmPeopleQuery(() => ui.companyId);
 	// "Send Message" shows the whole timeline; "Long Note" only the notes.
 	const messages = createDealMessagesQuery(
 		() => deal.id,

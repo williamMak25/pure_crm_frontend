@@ -9,6 +9,7 @@
 	import Toggle from '../ui/toggle/Toggle.svelte';
 
 	// Figma "Company Management" — variants "No Branch" and "Include branch".
+	// Edits the company selected in the navbar switcher; every company has its own details and branches.
 	interface Props {
 		initial: Company;
 		saving: boolean;
@@ -22,7 +23,7 @@
 	const dirty = $derived(JSON.stringify(company) !== JSON.stringify(initial));
 
 	const addBranch = () =>
-		company.branches.push({ id: crypto.randomUUID(), name: '', address: '', phone: '' } satisfies Branch);
+		company.branches.push({ id: `new-${crypto.randomUUID()}`, name: '', address: '', phone: '' } satisfies Branch);
 	const removeBranch = (id: string) => (company.branches = company.branches.filter((b) => b.id !== id));
 
 	function submit(e: SubmitEvent) {
@@ -30,9 +31,9 @@
 		errors = {};
 		if (!company.name.trim()) errors.name = 'Company name is required';
 		if (!/^\S+@\S+\.\S+$/.test(company.email)) errors.email = 'Enter a valid email address';
-		company.branches.forEach((b) => {
-			if (company.hasBranches && !b.name.trim()) errors[`branch-${b.id}`] = 'Branch name is required';
-		});
+		if (company.hasBranches) {
+			for (const b of company.branches) if (!b.name.trim()) errors[`branch-${b.id}`] = 'Branch name is required';
+		}
 		if (Object.keys(errors).length) return;
 		onsave($state.snapshot(company));
 	}
@@ -40,7 +41,10 @@
 
 <form class="flex flex-col gap-6" onsubmit={submit} novalidate>
 	<section class="flex flex-col gap-4 rounded-xl bg-white p-4 sm:p-5">
-		<h2 class="text-md font-medium text-neutral-800">Company Information</h2>
+		<div class="flex flex-wrap items-baseline justify-between gap-2">
+			<h2 class="text-md font-medium text-neutral-800">Company Information</h2>
+			<span class="text-sm text-neutral-500">{initial.members} {initial.members === 1 ? 'member' : 'members'}</span>
+		</div>
 		<div class="grid grid-cols-1 gap-4 md:grid-cols-2">
 			<Input bind:value={company.name} label="Company Name" required error={errors.name} />
 			<Input bind:value={company.email} label="Email" type="email" required error={errors.email} />
@@ -69,6 +73,8 @@
 							<Icon name="trash" size={18} />
 						</button>
 					</li>
+				{:else}
+					<li class="text-sm text-neutral-500">No branches yet.</li>
 				{/each}
 			</ul>
 			<Button variant="outline" size="md" icon="plus" class="self-start" onclick={addBranch}>Add Branch</Button>

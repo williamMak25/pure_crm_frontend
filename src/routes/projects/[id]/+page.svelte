@@ -98,7 +98,7 @@
 	}
 </script>
 
-<svelte:head><title>{board.data?.title ?? 'Board'} · PURE Education ERP</title></svelte:head>
+<svelte:head><title>{board.data?.title ?? 'Board'} · PURE ERP</title></svelte:head>
 
 <div class="flex flex-col gap-4">
 	<!-- Board toolbar -->

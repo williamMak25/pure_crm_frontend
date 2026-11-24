@@ -18,7 +18,7 @@
 	];
 </script>
 
-<svelte:head><title>Payments · PURE Education ERP</title></svelte:head>
+<svelte:head><title>Payments · PURE ERP</title></svelte:head>
 
 <ResourcePage
 	module={MODULES.invoices}

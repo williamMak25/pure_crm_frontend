@@ -10,7 +10,6 @@
 		{ key: 'name', label: 'Contact Name' },
 		{ key: 'company', label: 'Company' },
 		{ key: 'email', label: 'Email' },
-		{ key: 'business', label: 'Business' },
 		{ key: 'owner', label: 'Assigned Owner' },
 		{ key: 'followUpDate', label: 'Follow-up Date', format: 'date' },
 		{ key: 'status', label: 'Status', format: 'status' },
@@ -18,7 +17,7 @@
 	];
 </script>
 
-<svelte:head><title>Contacts · PURE Education ERP</title></svelte:head>
+<svelte:head><title>Contacts · PURE ERP</title></svelte:head>
 
 <ResourcePage
 	module={MODULES.crm}

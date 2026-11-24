@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { createCreateBoardMutation } from '#lib/queries/projects.ts';
-	import { ui } from '#lib/stores/ui.svelte.ts';
 	import type { Visibility } from '#lib/types/index.ts';
 	import Button from '../ui/button/Button.svelte';
 	import Input from '../ui/input/Input.svelte';
@@ -30,7 +29,7 @@
 			error = 'Board title is required';
 			return;
 		}
-		create.mutate({ title: title.trim(), visibility, business: ui.business });
+		create.mutate({ title: title.trim(), visibility });
 	}
 </script>
 

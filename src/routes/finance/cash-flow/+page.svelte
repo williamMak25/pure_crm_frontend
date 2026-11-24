@@ -23,7 +23,7 @@
 	];
 </script>
 
-<svelte:head><title>Cash Flow · PURE Education ERP</title></svelte:head>
+<svelte:head><title>Cash Flow · PURE ERP</title></svelte:head>
 
 <ModuleLayout {...MODULES.finance}>
 	{#snippet action()}

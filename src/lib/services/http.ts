@@ -1,6 +1,7 @@
 import { browser } from '$app/env';
 import { API_BASE_URL, API_MOCK } from '$app/env/public';
 import { ENDPOINTS, LIVE_PREFIXES } from '#lib/constants/endpoints.ts';
+import { ui } from '#lib/stores/ui.svelte.ts';
 
 export class ApiError extends Error {
 	constructor(
@@ -65,12 +66,16 @@ export async function request<T>(method: Method, path: string, opts: RequestOpti
 		return handleMockRequest<T>(method, path, opts);
 	}
 
+	const headers: Record<string, string> = {};
+	if (opts.body !== undefined) headers['Content-Type'] = 'application/json';
+	// Every company stands on its own: the API scopes each request to the one picked in the switcher.
+	if (ui.companyId) headers['X-Company'] = ui.companyId;
 	const send = () =>
 		fetch(buildUrl(path, opts.query), {
 			method,
 			signal: opts.signal,
 			credentials: 'include',
-			headers: opts.body !== undefined ? { 'Content-Type': 'application/json' } : undefined,
+			headers,
 			body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined
 		});
 

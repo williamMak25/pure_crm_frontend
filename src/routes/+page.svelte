@@ -26,7 +26,7 @@
 	const attention = createAttentionQuery();
 </script>
 
-<svelte:head><title>Overview · PURE Education ERP</title></svelte:head>
+<svelte:head><title>Overview · PURE ERP</title></svelte:head>
 
 <div class="flex flex-col gap-4">
 	<PageHeader title="Overview" description="Monitor your business performance and daily operations." />

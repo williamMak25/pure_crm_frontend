@@ -17,10 +17,10 @@
 	const permissions = createPermissionsQuery(() => roleId);
 	const save = createSavePermissionsMutation(() => roleId);
 
-	const isAdmin = $derived(role?.name === 'Super Admin');
+	const isAdmin = $derived(role?.isSystem ?? false);
 </script>
 
-<svelte:head><title>Roles &amp; Permissions · PURE Education ERP</title></svelte:head>
+<svelte:head><title>Roles &amp; Permissions · PURE ERP</title></svelte:head>
 
 <div class="grid grid-cols-1 gap-4 lg:grid-cols-[240px_1fr]">
 	<!-- "User Role" items: name with the user count underneath (Default / Hover / Active states). -->
@@ -63,7 +63,7 @@
 		{:else if permissions.isError}
 			<ErrorState error={permissions.error} onretry={() => permissions.refetch()} />
 		{:else}
-			{#if isAdmin}<p class="rounded-lg bg-blue-50 px-3 py-2 text-sm text-blue-500">The Super Admin role always has full access and can’t be edited.</p>{/if}
+			{#if isAdmin}<p class="rounded-lg bg-blue-50 px-3 py-2 text-sm text-blue-500">The {role?.name} role always has full access and can’t be edited.</p>{/if}
 			{#key `${roleId}:${permissions.dataUpdatedAt}`}
 				<PermissionEditor initial={permissions.data} readonly={isAdmin} saving={save.isPending} onsave={(rows) => save.mutate(rows)} />
 			{/key}

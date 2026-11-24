@@ -9,14 +9,13 @@
 
 	// Figma "Edit Pipeline" (opened from a pipeline card) and the "+" on a stage (add mode).
 	interface Props {
-		business: string;
 		/** Edit an existing deal. */
 		dealId?: string | null;
 		/** Add a deal to this stage. */
 		stage?: PipelineStage | null;
 		onclose: () => void;
 	}
-	let { business, dealId = null, stage = null, onclose }: Props = $props();
+	let { dealId = null, stage = null, onclose }: Props = $props();
 
 	const deal = createDealQuery(() => dealId);
 	const update = createUpdateDealMutation({ success: 'Deal saved' });
@@ -34,7 +33,6 @@
 		{#if stage}
 			<section class="rounded-xl bg-white p-4">
 				<DealForm
-					{business}
 					saving={add.isPending}
 					oncreate={(body) => add.mutateAsync({ stageId: stage.id, body })}
 					oncancel={onclose}
@@ -53,7 +51,6 @@
 				<section class="rounded-xl bg-white p-4" aria-label="Deal details">
 					{#key deal.dataUpdatedAt}
 						<DealForm
-							business={deal.data.business}
 							deal={deal.data}
 							{locked}
 							saving={update.isPending}

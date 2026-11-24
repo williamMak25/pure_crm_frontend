@@ -1,22 +1,26 @@
 import { createMutation, createQuery, keepPreviousData, useQueryClient } from '@tanstack/svelte-query';
 import { toast } from 'svelte-sonner';
-import { cashFlowService, pipelineService, quotationService, salesOrderService, settingsService } from '#lib/services/index.ts';
-import type { Company, DealInput, DealMessageKind, DealUpdate, ID, ModulePermission, PipelineStage, SecuritySettings, TrendRange } from '#lib/types/index.ts';
+import { cashFlowService, leadService, pipelineService, quotationService, salesOrderService, settingsService } from '#lib/services/index.ts';
+import type { Company, DealInput, DealMessageKind, DealUpdate, ID, LeadStatus, ModulePermission, PipelineStage, UserUpdate, UserWithPassword, SecuritySettings, TrendRange } from '#lib/types/index.ts';
+import { useSwitchCompany } from './company';
 import { STALE } from './client';
 import { queryKeys } from './keys';
 
 /* ---------- CRM ---------- */
-export const createPipelineQuery = (business: () => string) =>
+/** `company` (the switcher's company id) only keys the cache; the API scopes by the X-Company header. */
+export const createPipelineQuery = (company: () => string) =>
 	createQuery(() => {
-		const name = business();
+		const id = company();
 		return {
-			queryKey: queryKeys.crm.pipeline(name),
-			queryFn: ({ signal }: { signal: AbortSignal }) => pipelineService.stages(name, signal),
-			enabled: !!name
+			queryKey: queryKeys.crm.pipeline(id),
+			queryFn: ({ signal }: { signal: AbortSignal }) => pipelineService.stages(signal),
+			enabled: !!id,
+			// Leads can join the board from the Leads tab at any time: always refetch when the board opens.
+			staleTime: 0
 		};
 	});
 
-/** Every pipeline change refetches the board and the Contacts table (new deals create Lead contacts). */
+/** Every pipeline change refetches the board and the Leads table (deals and leads move together). */
 function createPipelineMutation<TVars, TData>(
 	mutationFn: (vars: TVars) => Promise<TData>,
 	opts: { success?: string; onDone?: () => void } = {}
@@ -26,7 +30,7 @@ function createPipelineMutation<TVars, TData>(
 		mutationFn,
 		onSuccess: () => {
 			client.invalidateQueries({ queryKey: queryKeys.crm.all });
-			client.invalidateQueries({ queryKey: queryKeys.resource.all('contacts') });
+			client.invalidateQueries({ queryKey: queryKeys.resource.all('leads') });
 			if (opts.success) toast.success(opts.success);
 			opts.onDone?.();
 		},
@@ -82,6 +86,29 @@ export function createMoveDealMutation(business: () => string) {
 	}));
 }
 
+/**
+ * Change a lead's status from the Leads table. "New" moves it into the pipeline; the toast links to the card.
+ */
+export function createLeadStatusMutation(onopen: (dealId: string) => void) {
+	const client = useQueryClient();
+	return createMutation(() => ({
+		mutationFn: ({ id, status }: { id: ID; status: LeadStatus }) => leadService.update(id, { status }),
+		onSuccess: (lead, { status }) => {
+			client.invalidateQueries({ queryKey: queryKeys.resource.all('leads') });
+			client.invalidateQueries({ queryKey: queryKeys.crm.all });
+			if (status === 'New' && lead.dealId) {
+				const dealId = lead.dealId;
+				toast.success(`${lead.name} moved to the pipeline (${lead.stage ?? 'New'} stage)`, {
+					action: { label: 'Open', onClick: () => onopen(dealId) }
+				});
+			} else {
+				toast.success(`${lead.name} is now ${lead.status}`);
+			}
+		},
+		onError: (e: Error) => toast.error(e.message)
+	}));
+}
+
 export const createDeleteDealMutation = () =>
 	createPipelineMutation((id: ID) => pipelineService.removeDeal(id), { success: 'Deal deleted' });
 
@@ -96,13 +123,13 @@ export const createDealQuery = (id: () => ID | null) =>
 		};
 	});
 
-export const createCrmPeopleQuery = (business: () => string) =>
+export const createCrmPeopleQuery = (company: () => string) =>
 	createQuery(() => {
-		const name = business();
+		const id = company();
 		return {
-			queryKey: queryKeys.crm.people(name),
-			queryFn: () => pipelineService.people(name),
-			enabled: !!name,
+			queryKey: queryKeys.crm.people(id),
+			queryFn: () => pipelineService.people(),
+			enabled: !!id,
 			staleTime: STALE.reference
 		};
 	});
@@ -199,25 +226,89 @@ export function createSaveCompanyMutation() {
 		mutationFn: (body: Partial<Company>) => settingsService.saveCompany(body),
 		onSuccess: (data) => {
 			client.setQueryData(queryKeys.settings.company, data);
+			// The switcher follows a rename (it matches the company by id).
+			client.invalidateQueries({ queryKey: queryKeys.app.businesses });
 			toast.success('Company details saved');
 		},
 		onError: (e: Error) => toast.error(e.message)
 	}));
 }
 
-export const createUserDetailQuery = (id: () => ID) =>
-	createQuery(() => ({
-		queryKey: queryKeys.resource.detail('users', id()),
-		queryFn: () => settingsService.user(id())
+/** Super admins: add a company and switch to it. */
+export function createAddCompanyMutation(onDone?: () => void) {
+	const client = useQueryClient();
+	const switchCompany = useSwitchCompany();
+	return createMutation(() => ({
+		mutationFn: (name: string) => settingsService.createCompany(name),
+		onSuccess: async (created) => {
+			await client.invalidateQueries({ queryKey: queryKeys.app.businesses });
+			switchCompany({ id: created.id, name: created.name });
+			toast.success(`${created.name} created. You're now working in it.`);
+			onDone?.();
+		},
+		onError: (e: Error) => toast.error(e.message)
 	}));
+}
 
-export function createSaveAccessMutation(id: () => ID) {
+/** Super admins: delete the selected company (refused while it has records). The switcher moves on. */
+export function createDeleteCompanyMutation() {
 	const client = useQueryClient();
 	return createMutation(() => ({
-		mutationFn: (body: Parameters<typeof settingsService.saveAccess>[1]) => settingsService.saveAccess(id(), body),
+		mutationFn: (id: ID) => settingsService.deleteCompany(id),
 		onSuccess: () => {
+			client.invalidateQueries({ queryKey: queryKeys.app.businesses });
+			toast.success('Company deleted');
+		},
+		onError: (e: Error) => toast.error(e.message)
+	}));
+}
+
+export const createRemoveFromCompanyMutation = (onDone?: () => void) =>
+	createUserMutation((id: ID) => settingsService.removeFromCompany(id), 'Removed from this company', () => onDone?.());
+
+export const createUserDetailQuery = (id: () => ID) =>
+	createQuery(() => {
+		const userId = id();
+		return {
+			queryKey: queryKeys.resource.detail('users', userId),
+			queryFn: ({ signal }: { signal: AbortSignal }) => settingsService.user(userId, signal),
+			enabled: !!userId
+		};
+	});
+
+/** Any change to a user: refreshes the users table, the detail page and role user counts. */
+function createUserMutation<V, R>(fn: (v: V) => Promise<R>, success?: string, onDone?: (r: R) => void) {
+	const client = useQueryClient();
+	return createMutation(() => ({
+		mutationFn: fn,
+		onSuccess: (r: R) => {
 			client.invalidateQueries({ queryKey: queryKeys.resource.all('users') });
-			toast.success('Access rights saved');
+			client.invalidateQueries({ queryKey: queryKeys.settings.roles });
+			if (success) toast.success(success);
+			onDone?.(r);
+		},
+		onError: (e: Error) => toast.error(e.message)
+	}));
+}
+
+export const createSaveAccessMutation = (id: () => ID) =>
+	createUserMutation((body: UserUpdate) => settingsService.updateUser(id(), body), 'Access rights saved');
+
+export const createUpdateUserMutation = (id: () => ID, success = 'User updated') =>
+	createUserMutation((body: UserUpdate) => settingsService.updateUser(id(), body), success);
+
+export const createAddUserMutation = (onDone: (r: UserWithPassword) => void) =>
+	createUserMutation((body: Record<string, unknown>) => settingsService.users.create(body), 'User added', onDone);
+
+export const createResetPasswordMutation = (onDone: (r: UserWithPassword) => void) =>
+	createUserMutation((id: ID) => settingsService.resetPassword(id), undefined, onDone);
+
+export function createChangePasswordMutation(onDone?: () => void) {
+	return createMutation(() => ({
+		mutationFn: settingsService.changePassword,
+		onSuccess: () => {
+			toast.success('Password updated. Other devices were signed out.');
+			onDone?.();
 		},
 		onError: (e: Error) => toast.error(e.message)
 	}));

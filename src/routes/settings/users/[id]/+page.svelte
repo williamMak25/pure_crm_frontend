@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import SecurityForm from '#lib/components/settings/SecurityForm.svelte';
+	import TempPasswordModal from '#lib/components/settings/TempPasswordModal.svelte';
+	import Toggle from '#lib/components/ui/toggle/Toggle.svelte';
 	import Avatar from '#lib/components/ui/avatar/Avatar.svelte';
 	import Button from '#lib/components/ui/button/Button.svelte';
 	import Icon from '#lib/components/ui/icon/Icon.svelte';
@@ -8,45 +10,46 @@
 	import Skeleton from '#lib/components/ui/skeleton/Skeleton.svelte';
 	import ErrorState from '#lib/components/ui/state/ErrorState.svelte';
 	import SegmentTabs from '#lib/components/ui/tabs/SegmentTabs.svelte';
-	import { createBusinessesQuery } from '#lib/queries/dashboard.ts';
+	import { goto } from '$app/navigation';
+	import { createMeQuery } from '#lib/queries/dashboard.ts';
 	import {
 		createPermissionsQuery,
+		createRemoveFromCompanyMutation,
+		createResetPasswordMutation,
+		createUpdateUserMutation,
 		createRolesQuery,
 		createSaveAccessMutation,
 		createSaveSecurityMutation,
 		createSecurityQuery,
 		createUserDetailQuery
 	} from '#lib/queries/modules.ts';
-	import type { ModulePermission } from '#lib/types/index.ts';
+	import type { ModulePermission, UserWithPassword } from '#lib/types/index.ts';
+	import { formatRelative } from '#lib/utils/format.ts';
 
 	const id = $derived(page.params.id ?? '');
 	const user = createUserDetailQuery(() => id);
 	const roles = createRolesQuery();
-	const businesses = createBusinessesQuery();
 	const saveAccess = createSaveAccessMutation(() => id);
 	const security = createSecurityQuery();
 	const saveSecurity = createSaveSecurityMutation();
+	const me = createMeQuery();
+	const isMe = $derived(!!me.data && me.data.id === id);
+	const isSuperAdmin = $derived(me.data?.isSuperuser ?? false);
+	const canEditSettings = $derived(!!me.data && (isSuperAdmin || !!me.data.permissions?.settings?.includes('update')));
+	const setStatus = createUpdateUserMutation(() => id, 'Account status updated');
+	let resetResult = $state<UserWithPassword | null>(null);
+	const resetPassword = createResetPasswordMutation((r) => (resetResult = r));
+	const removeMember = createRemoveFromCompanyMutation(() => goto('/settings/users'));
 
 	let tab = $state<'access' | 'security'>('access');
 
-	// Draft edits; null means "not edited, show the saved value".
+	// Roles are per company: this is the person's role in the company selected at the top.
 	let draftRole = $state<string | null>(null);
-	let draftBusinesses = $state<string[] | null>(null);
-	let draftDefault = $state<string | null>(null);
 	const roleId = $derived(draftRole ?? user.data?.roleId ?? '');
-	const chosen = $derived(draftBusinesses ?? user.data?.businesses ?? []);
-	// The default must be one of the chosen businesses; fall back to the first one.
-	const defaultBusiness = $derived.by(() => {
-		for (const candidate of [draftDefault, user.data?.defaultBusiness]) {
-			if (candidate && chosen.includes(candidate)) return candidate;
-		}
-		return chosen[0] ?? '';
-	});
-	const dirty = $derived(draftRole !== null || draftBusinesses !== null || draftDefault !== null);
+	const dirty = $derived(draftRole !== null && draftRole !== user.data?.roleId);
 
 	// Access is decided by the role: show what the selected role's matrix grants per module.
 	const rolePermissions = createPermissionsQuery(() => roleId || undefined);
-	const addable = $derived((businesses.data ?? []).map((b) => b.name).filter((n) => !chosen.includes(n)));
 
 	const GROUPS: { title: string; modules: string[] }[] = [
 		{ title: 'CRM & Sales', modules: ['CRM & Contacts', 'Sales'] },
@@ -67,15 +70,15 @@
 	const levelOf = (module: string) => level(rolePermissions.data?.find((p) => p.module === module));
 
 	function reset() {
-		draftRole = draftBusinesses = draftDefault = null;
+		draftRole = null;
 	}
 	async function save() {
-		await saveAccess.mutateAsync({ roleId, businesses: chosen, defaultBusiness });
+		await saveAccess.mutateAsync({ roleId });
 		reset();
 	}
 </script>
 
-<svelte:head><title>{user.data?.name ?? 'User'} · User Management · PURE Education ERP</title></svelte:head>
+<svelte:head><title>{user.data?.name ?? 'User'} · User Management · PURE ERP</title></svelte:head>
 
 <div class="flex flex-col gap-4">
 	<a href="/settings/users" class="grid size-7 place-items-center rounded-md hover:bg-neutral-200" aria-label="Back to users">
@@ -114,43 +117,24 @@
 				<section class="flex flex-col gap-4 rounded-xl bg-white p-4 sm:p-5">
 					<h2 class="border-b border-neutral-200 pb-3 text-md font-medium text-neutral-800">Roles</h2>
 					<Select
-						label="Role"
+						label="Role in this company"
 						value={roleId}
+						disabled={!canEditSettings}
 						options={(roles.data ?? []).map((r) => ({ label: r.name, value: r.id }))}
 						onchange={(e) => (draftRole = e.currentTarget.value)}
 					/>
 					<div class="flex flex-col gap-1.5">
-						<span class="text-sm text-neutral-800">Businesses</span>
-						<div class="flex min-h-[42px] flex-wrap items-center gap-2 rounded-lg border border-neutral-200 px-2 py-1.5">
-							{#each chosen as name (name)}
-								<span class="inline-flex items-center gap-1 rounded-full border border-neutral-200 px-2 py-0.5 text-xs text-neutral-700">
-									{name}
-									<button type="button" class="text-neutral-500 hover:text-brand-600" aria-label="Remove {name}" onclick={() => (draftBusinesses = chosen.filter((b) => b !== name))}>
-										<Icon name="close" size={12} />
-									</button>
-								</span>
+						<span class="text-sm text-neutral-800">Companies</span>
+						<div class="flex flex-wrap gap-2">
+							{#each user.data.companies as name (name)}
+								<span class="inline-flex items-center rounded-full border border-neutral-200 px-2.5 py-0.5 text-xs text-neutral-700">{name}</span>
 							{/each}
-							{#if addable.length}
-								<select
-									class="h-7 border-0 bg-transparent py-0 pr-7 pl-1 text-xs text-neutral-500 focus:ring-0"
-									aria-label="Add business"
-									value=""
-									onchange={(e) => {
-										const v = e.currentTarget.value;
-										if (v) draftBusinesses = [...chosen, v];
-										e.currentTarget.value = '';
-									}}
-								>
-									<option value="">+ Add business</option>
-									{#each addable as name (name)}<option value={name}>{name}</option>{/each}
-								</select>
-							{/if}
 						</div>
+						<span class="text-xs text-neutral-500">The role above applies to this company only. Each company sets its own.</span>
 					</div>
-					<Select label="Default Business" value={defaultBusiness} options={chosen} onchange={(e) => (draftDefault = e.currentTarget.value)} />
 					<div class="flex justify-end gap-3 border-t border-neutral-100 pt-4">
 						<Button variant="outline" size="md" disabled={!dirty} onclick={reset}>Cancel</Button>
-						<Button size="md" disabled={!dirty || !chosen.length} loading={saveAccess.isPending} onclick={save}>Save Changes</Button>
+						<Button size="md" disabled={!dirty || !canEditSettings} loading={saveAccess.isPending} onclick={save}>Save Changes</Button>
 					</div>
 				</section>
 
@@ -170,17 +154,80 @@
 			</div>
 			<p class="text-xs text-neutral-500">Module access comes from the role. To change it, pick another role or edit the role in Roles &amp; Permissions.</p>
 		{/if}
-	{:else if security.isPending}
-		<div class="grid grid-cols-1 gap-4 xl:grid-cols-2" aria-busy="true">
-			{#each Array(2) as _, i (i)}
-				<div class="flex flex-col gap-4 rounded-xl bg-white p-5"><Skeleton width="160px" height="20px" />{#each Array(4) as _, j (j)}<Skeleton height="42px" rounded="lg" />{/each}</div>
-			{/each}
-		</div>
-	{:else if security.isError}
-		<div class="rounded-xl bg-white"><ErrorState error={security.error} onretry={() => security.refetch()} /></div>
 	{:else}
-		{#key security.dataUpdatedAt}
-			<SecurityForm initial={security.data} saving={saveSecurity.isPending} onsave={(s) => saveSecurity.mutate(s)} />
-		{/key}
+		{#if user.data}
+			{@const u = user.data}
+			<section class="flex flex-col gap-4 rounded-xl bg-white p-4 sm:p-5" aria-label="Account">
+				<h2 class="border-b border-neutral-200 pb-3 text-md font-medium text-neutral-800">Account</h2>
+				<div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+					<div class="flex flex-col gap-1">
+						<span class="text-sm text-neutral-500">Last active</span>
+						<span class="text-sm text-neutral-800">{formatRelative(u.lastActive)}</span>
+					</div>
+					<Toggle
+						checked={u.status === 'Active'}
+						label="Active account"
+						description={isMe
+							? "You can't deactivate your own account."
+							: isSuperAdmin
+								? 'Inactive people are signed out of every company and can’t sign in.'
+								: 'Only a super admin can change this: it affects every company this person belongs to.'}
+						disabled={isMe || !isSuperAdmin || setStatus.isPending}
+						onchange={(v) => setStatus.mutate({ status: v ? 'Active' : 'Inactive' })}
+					/>
+				</div>
+				{#if canEditSettings && !isMe}
+					<div class="flex flex-col gap-2 border-t border-neutral-100 pt-4 sm:flex-row sm:items-center sm:justify-between">
+						<p class="text-sm text-neutral-600">Take {u.name} out of this company. Their account and other companies stay.</p>
+						<Button
+							variant="outline-brand"
+							size="md"
+							icon="logout"
+							loading={removeMember.isPending}
+							onclick={() => confirm(`Remove ${u.name} from this company?`) && removeMember.mutate(u.id)}
+						>
+							Remove from company
+						</Button>
+					</div>
+				{/if}
+				{#if isSuperAdmin}
+					<div class="flex flex-col gap-2 border-t border-neutral-100 pt-4 sm:flex-row sm:items-center sm:justify-between">
+						<p class="text-sm text-neutral-600">Create a new temporary password and sign {isMe ? 'you' : u.name} out everywhere.</p>
+						<Button
+							variant="outline-brand"
+							size="md"
+							icon="key"
+							loading={resetPassword.isPending}
+							onclick={() => confirm(`Reset the password for ${u.name}? They will be signed out.`) && resetPassword.mutate(u.id)}
+						>
+							Reset password
+						</Button>
+					</div>
+				{/if}
+			</section>
+		{/if}
+
+		<!-- Company-wide sign-in settings, plus Change Password on your own account. -->
+		{#if security.isPending}
+			<div class="grid grid-cols-1 gap-4 xl:grid-cols-2" aria-busy="true">
+				{#each Array(2) as _, i (i)}
+					<div class="flex flex-col gap-4 rounded-xl bg-white p-5"><Skeleton width="160px" height="20px" />{#each Array(4) as _, j (j)}<Skeleton height="42px" rounded="lg" />{/each}</div>
+				{/each}
+			</div>
+		{:else if security.isError}
+			<div class="rounded-xl bg-white"><ErrorState error={security.error} onretry={() => security.refetch()} /></div>
+		{:else}
+			{#key security.dataUpdatedAt}
+				<SecurityForm
+					initial={security.data}
+					saving={saveSecurity.isPending}
+					onsave={(s) => saveSecurity.mutate(s)}
+					showPasswordChange={isMe}
+					canEdit={canEditSettings}
+				/>
+			{/key}
+		{/if}
 	{/if}
 </div>
+
+<TempPasswordModal result={resetResult} title="Password reset" onclose={() => (resetResult = null)} />

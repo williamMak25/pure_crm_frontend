@@ -11,6 +11,7 @@ import type {
 	DealMessageKind,
 	DealUpdate,
 	ID,
+	Lead,
 	PipelineStage,
 	University,
 	UserSummary
@@ -18,15 +19,17 @@ import type {
 import { http } from './http';
 import { createResourceService } from './resource.service';
 
+/** Students (Contact List). */
 export const contactService = createResourceService<Contact>(ENDPOINTS.contacts);
+/** Leads tab. PATCH `{ status: 'New' }` moves a lead into the pipeline. */
+export const leadService = createResourceService<Lead>(ENDPOINTS.leads);
 export const universityService = createResourceService<University>(ENDPOINTS.universities);
 export const consultantService = createResourceService<Consultant>(ENDPOINTS.consultants);
 
-/** One pipeline per business; `business` is the name shown in the navbar switcher. */
+/** The selected company's pipeline (the API scopes it via the X-Company header). */
 export const pipelineService = {
-	stages: (business: string, signal?: AbortSignal) =>
-		http.get<PipelineStage[]>(ENDPOINTS.pipeline, { business }, signal),
-	createStage: (body: { name: string; business: string; color?: string }) =>
+	stages: (signal?: AbortSignal) => http.get<PipelineStage[]>(ENDPOINTS.pipeline, undefined, signal),
+	createStage: (body: { name: string; color?: string }) =>
 		http.post<PipelineStage>(ENDPOINTS.pipeline, body),
 	updateStage: (id: ID, body: Partial<Pick<PipelineStage, 'name' | 'color' | 'position'>>) =>
 		http.patch<PipelineStage>(`${ENDPOINTS.pipeline}/${id}`, body),
@@ -38,8 +41,8 @@ export const pipelineService = {
 	updateDeal: (id: ID, body: DealUpdate) => http.patch<DealDetail>(`${ENDPOINTS.deals}/${id}`, body),
 	removeDeal: (id: ID) => http.delete<void>(`${ENDPOINTS.deals}/${id}`),
 
-	/** Users who work in the business (Saleperson / Assigned to pickers). */
-	people: (business: string) => http.get<UserSummary[]>(ENDPOINTS.crmPeople, { business }),
+	/** Members of the company (Saleperson / Assigned to pickers). */
+	people: () => http.get<UserSummary[]>(ENDPOINTS.crmPeople),
 
 	messages: (dealId: ID, query: { kind?: DealMessageKind; search?: string } = {}, signal?: AbortSignal) =>
 		http.get<DealMessage[]>(`${ENDPOINTS.deals}/${dealId}/messages`, query, signal),

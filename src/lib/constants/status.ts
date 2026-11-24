@@ -26,7 +26,12 @@ export const STATUS_TONE: Record<Status, Tone> = {
 	Archived: 'amber',
 	Late: 'amber',
 	'On Leave': 'amber',
-	Draft: 'neutral'
+	Draft: 'neutral',
+	Open: 'blue',
+	Contacted: 'amber',
+	New: 'green',
+	'In Pipeline': 'green',
+	Lost: 'red'
 };
 
 export const TONE_CLASSES: Record<Tone, string> = {

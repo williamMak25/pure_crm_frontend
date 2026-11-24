@@ -10,13 +10,12 @@
 		{ key: 'name', label: 'University Name' },
 		{ key: 'country', label: 'Country' },
 		{ key: 'email', label: 'Email' },
-		{ key: 'business', label: 'Business' },
 		{ key: 'status', label: 'Status', format: 'status' },
 		{ key: 'id', label: 'Action', format: 'view' }
 	];
 </script>
 
-<svelte:head><title>Universities · PURE Education ERP</title></svelte:head>
+<svelte:head><title>Universities · PURE ERP</title></svelte:head>
 
 <ResourcePage
 	module={MODULES.crm}

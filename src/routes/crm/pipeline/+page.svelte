@@ -22,7 +22,7 @@
 	import type { Deal, PipelineStage } from '#lib/types/index.ts';
 
 	// Each business has its own pipeline; follow the navbar switcher.
-	const pipeline = createPipelineQuery(() => ui.business);
+	const pipeline = createPipelineQuery(() => ui.companyId);
 	let stageOpen = $state(false);
 	const addStage = createAddStageMutation();
 	let dealStage = $state<PipelineStage | null>(null);
@@ -30,7 +30,7 @@
 	let openDeal = $state<string | null>(page.url.searchParams.get('deal'));
 	const updateDeal = createUpdateDealMutation();
 	const deleteDeal = createDeleteDealMutation();
-	const moveDeal = createMoveDealMutation(() => ui.business);
+	const moveDeal = createMoveDealMutation(() => ui.companyId);
 
 	// Drag and drop between stages (desktop); the card's ⋮ menu has "Move to …" for touch and keyboard.
 	// Only for roles that can update CRM, so a drop never bounces back with a 403.
@@ -57,15 +57,15 @@
 	}
 </script>
 
-<svelte:head><title>Pipeline · PURE Education ERP</title></svelte:head>
+<svelte:head><title>Pipeline · PURE ERP</title></svelte:head>
 
 <ModuleLayout {...MODULES.crm}>
 	{#snippet action()}
 		<Button size="lg" icon="plus" onclick={() => (stageOpen = true)}>Add Pipeline</Button>
 	{/snippet}
 
-	{#if !ui.business}
-		<div class="rounded-xl bg-white"><EmptyState title="Pick a business" description="Each business has its own pipeline. Choose one in the switcher above." /></div>
+	{#if !ui.companyId}
+		<div class="rounded-xl bg-white"><EmptyState title="Pick a company" description="Each company has its own pipeline. Choose one in the switcher above." /></div>
 	{:else if pipeline.isPending}
 		<div class="flex gap-3 overflow-hidden" aria-busy="true">
 			{#each [4, 2, 1, 0] as n, i (i)}
@@ -107,12 +107,11 @@
 	placement="center"
 	width={426}
 	pending={addStage.isPending}
-	onsubmit={(p) => addStage.mutateAsync({ name: String(p.name), business: ui.business })}
+	onsubmit={(p) => addStage.mutateAsync({ name: String(p.name) })}
 	onclose={() => (stageOpen = false)}
 />
 
 <DealDialog
-	business={ui.business}
 	dealId={openDeal}
 	stage={dealStage}
 	onclose={() => {

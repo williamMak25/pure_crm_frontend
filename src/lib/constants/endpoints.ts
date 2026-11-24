@@ -15,6 +15,7 @@ export const ENDPOINTS = {
 	dashboardRecentSales: '/dashboard/recent-sales',
 
 	contacts: '/crm/contacts',
+	leads: '/crm/leads',
 	pipeline: '/crm/pipeline',
 	universities: '/crm/universities',
 	consultants: '/crm/consultants',
@@ -49,6 +50,7 @@ export const ENDPOINTS = {
 
 	roles: '/settings/roles',
 	company: '/settings/company',
+	companies: '/settings/companies',
 	users: '/settings/users',
 	security: '/settings/security'
 } as const;
@@ -60,4 +62,4 @@ export type ResourceEndpoint = keyof typeof ENDPOINTS;
  * prefixes still go to the API and everything else is answered by src/lib/mocks.
  * Add a module's prefix here once its backend endpoints exist.
  */
-export const LIVE_PREFIXES = ['/auth', '/me', '/businesses', '/crm', '/projects'] as const;
+export const LIVE_PREFIXES = ['/auth', '/me', '/businesses', '/crm', '/projects', '/settings'] as const;

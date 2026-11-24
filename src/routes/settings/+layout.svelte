@@ -10,11 +10,11 @@
 	const HEADERS: Record<string, { title: string; description: string }> = {
 		'/settings/users': {
 			title: 'User Management',
-			description: 'Manage who can sign in, their roles and the businesses they work in.'
+			description: 'Members of this company and their roles here.'
 		},
 		'/settings/company': {
 			title: 'Company Management',
-			description: 'Keep your company profile, business units and branches up to date.'
+			description: 'Details and branches of the company selected at the top. Each company stands on its own.'
 		},
 		'/settings/roles': {
 			title: 'Roles & Permissions',

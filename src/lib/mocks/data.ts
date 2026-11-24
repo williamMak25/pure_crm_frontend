@@ -6,13 +6,10 @@
  */
 import type {
 	Activity,
-	AppUser,
-	AppUserDetail,
 	AttentionItem,
 	Attendance,
 	Business,
 	CashFlow,
-	Company,
 	Consultant,
 	Contact,
 	CustomerInvoice,
@@ -21,7 +18,6 @@ import type {
 	IncomeExpense,
 	InvoiceHistory,
 	LeaveRequest,
-	ModulePermission,
 	OutstandingPayment,
 	Payment,
 	PayrollRecord,
@@ -30,11 +26,9 @@ import type {
 	Product,
 	Quotation,
 	QuotationDetail,
-	Role,
 	SaleInvoiceRow,
 	SalesOrder,
 	SalesOrderDetail,
-	SecuritySettings,
 	StatSummary,
 	Status,
 	Transaction,
@@ -358,76 +352,3 @@ export const departments: Department[] = departmentsList.map((name, i) => ({
 	employees: 6 + i * 3,
 	status: 'Active'
 }));
-
-/* ---------- Settings ---------- */
-export const roles: Role[] = [
-	{ id: 'r1', name: 'Super Admin', description: 'Full access to every module and setting.', users: 4 },
-	{ id: 'r2', name: 'Admin', description: 'Manage every module except company-wide settings.', users: 4 },
-	{ id: 'r3', name: 'Manager', description: 'Manage teams and approve requests.', users: 4 },
-	{ id: 'r4', name: 'Accountant', description: 'Invoices, payments and finance.', users: 4 },
-	{ id: 'r5', name: 'HR', description: 'Employees, attendance, leave and payroll.', users: 4 },
-	{ id: 'r6', name: 'Staff', description: 'Day-to-day work with read access elsewhere.', users: 4 }
-];
-
-const modules = ['Overview', 'CRM & Contacts', 'Project & Board', 'Sales', 'Invoices', 'Finance', 'HR & Payroll', 'Setting'];
-export const permissions = (roleId: string): ModulePermission[] =>
-	modules.map((module, i) => {
-		const full = roleId === 'r1' || (roleId === 'r2' && module !== 'Setting');
-		const viewer = roleId === 'r6';
-		return {
-			module,
-			actions: {
-				create: full || (!viewer && i % 2 === 0),
-				read: true,
-				update: full || (!viewer && i % 3 !== 2),
-				delete: full,
-				approve: full || (!viewer && i % 4 === 0)
-			}
-		};
-	});
-
-export const company: Company = {
-	id: 'co1',
-	name: 'PURE Education',
-	email: 'hello@pure-education.com',
-	phone: '09 755430342',
-	address: 'No. 12, Pyay Road, Kamayut Township, Yangon',
-	currency: 'MMK',
-	timezone: 'Asia/Yangon',
-	hasBranches: false,
-	branches: [
-		{ id: 'br1', name: 'Yangon HQ', address: 'Pyay Road, Kamayut, Yangon', phone: '09 755430342' },
-		{ id: 'br2', name: 'Mandalay Branch', address: '78th Street, Chanayethazan, Mandalay', phone: '09 954335488' }
-	]
-};
-
-export const users: AppUser[] = Array.from({ length: 18 }, (_, i) => ({
-	id: `usr${i + 1}`,
-	name: i === 0 ? 'Micheal Jame' : pick(empNames, i),
-	email: i === 0 ? 'micheal123@gmail.com' : `user${i + 1}@pure-education.com`,
-	phones: ['09 755430342', '09 954335488'],
-	role: i === 0 ? 'Super Admin' : pick(roles.map((r) => r.name), i),
-	business: pick(BUSINESSES, i),
-	avatar: i % 2 === 0 ? '/images/avatar-micheal.png' : '/images/avatar-guest.png',
-	status: pick(['Active', 'Active', 'Inactive'] as Status[], i),
-	lastActive: pick(['10 min ago', '1 hr ago', 'Yesterday', '3 days ago'], i)
-}));
-
-export const userDetail = (id: string): AppUserDetail => {
-	const u = users.find((x) => x.id === id) ?? users[0];
-	const role = roles.find((r) => r.name === u.role) ?? roles[0];
-	return {
-		...u,
-		roleId: role.id,
-		businesses: u.role === 'Super Admin' ? [...BUSINESSES] : [u.business],
-		defaultBusiness: u.business,
-		permissions: permissions(role.id)
-	};
-};
-
-export const security: SecuritySettings = {
-	twoFactor: true,
-	loginAlerts: true,
-	sessionTimeout: '30 minutes',
-	passwordExpiry: '90 days'
-};

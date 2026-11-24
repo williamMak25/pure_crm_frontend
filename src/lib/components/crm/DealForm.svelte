@@ -3,17 +3,16 @@
 	import { createCrmPeopleQuery } from '#lib/queries/modules.ts';
 	import { createListQuery } from '#lib/queries/resource.ts';
 	import { consultantService, universityService } from '#lib/services/index.ts';
+	import { ui } from '#lib/stores/ui.svelte.ts';
 	import type { DealDetail, DealInput, DealUpdate } from '#lib/types/index.ts';
-	import { cn } from '#lib/utils/cn.ts';
 	import Button from '../ui/button/Button.svelte';
 	import Icon from '../ui/icon/Icon.svelte';
 	import Input from '../ui/input/Input.svelte';
 	import Select from '../ui/select/Select.svelte';
 
-	// Figma "Edit Pipeline" left card: contact details, owner, tags and selected universities.
+	// Figma "Edit Pipeline" left card: contact details, owner, tags and the lead's university.
 	// Without `deal` it is the "Add Deal" form for a stage.
 	interface Props {
-		business: string;
 		deal?: DealDetail;
 		/** Lock button in the timeline header makes the form read-only. */
 		locked?: boolean;
@@ -22,10 +21,11 @@
 		onupdate?: (body: DealUpdate) => Promise<unknown>;
 		oncancel?: () => void;
 	}
-	let { business, deal, locked = false, saving = false, oncreate, onupdate, oncancel }: Props = $props();
+	let { deal, locked = false, saving = false, oncreate, onupdate, oncancel }: Props = $props();
 
-	const people = createCrmPeopleQuery(() => business);
-	const listParams = $derived({ business, pageSize: 100, status: 'Active' });
+	// Pickers list the selected company's people, consultants and universities.
+	const people = createCrmPeopleQuery(() => ui.companyId);
+	const listParams = { pageSize: 100, status: 'Active' };
 	const consultants = createListQuery(() => ({ name: 'consultants', service: consultantService, params: listParams }));
 	const universities = createListQuery(() => ({ name: 'universities', service: universityService, params: listParams }));
 
@@ -46,7 +46,7 @@
 			owner: d?.owner?.id ?? '',
 			date: d?.date ?? '',
 			tags: [...(d?.tags ?? [])],
-			universityIds: (d?.universities ?? []).map((u) => u.id)
+			universityId: d?.university?.id ?? ''
 		};
 	}
 	// The parent re-keys this component when the saved deal changes.
@@ -60,10 +60,12 @@
 		if (tag && !form.tags.includes(tag)) form.tags.push(tag);
 		tagDraft = '';
 	}
-	const toggleUniversity = (id: string) =>
-		(form.universityIds = form.universityIds.includes(id)
-			? form.universityIds.filter((u) => u !== id)
-			: [...form.universityIds, id]);
+	// One university per lead. Keep the saved one listed even if it is no longer active.
+	const universityOptions = $derived.by(() => {
+		const items = (universities.data?.items ?? []).map((u) => ({ label: u.name, value: u.id }));
+		const saved = deal?.university;
+		return saved && !items.some((o) => o.value === saved.id) ? [{ label: saved.name, value: saved.id }, ...items] : items;
+	});
 
 	async function submit(e: SubmitEvent) {
 		e.preventDefault();
@@ -82,7 +84,7 @@
 					owner: form.owner || undefined,
 					date: form.date || undefined,
 					tags: form.tags,
-					universityIds: form.universityIds
+					universityId: form.universityId || null
 				});
 			} else {
 				await oncreate?.({
@@ -94,7 +96,7 @@
 					owner: form.owner || undefined,
 					date: form.date || undefined,
 					tags: form.tags,
-					universityIds: form.universityIds
+					universityId: form.universityId || undefined
 				});
 			}
 		} catch {
@@ -159,26 +161,11 @@
 			{/if}
 		</div>
 
-		<div class="flex flex-col gap-2 sm:col-span-2">
-			<span class="text-sm text-neutral-800">Selected Universities <span class="text-brand-600">*</span></span>
-			<div class="flex flex-wrap gap-2" role="group" aria-label="Selected universities">
-				{#each universities.data?.items ?? [] as u (u.id)}
-					{@const on = form.universityIds.includes(u.id)}
-					<button
-						type="button"
-						aria-pressed={on}
-						class={cn(
-							'rounded-full border px-3 py-1.5 text-sm transition-colors',
-							on ? 'border-brand-500 bg-brand-50 text-brand-600' : 'border-neutral-200 text-neutral-700 hover:bg-neutral-50'
-						)}
-						onclick={() => toggleUniversity(u.id)}
-					>
-						{u.name}
-					</button>
-				{:else}
-					<span class="text-sm text-neutral-500">No active universities in {business} yet.</span>
-				{/each}
-			</div>
+		<div class="flex flex-col gap-1.5 sm:col-span-2">
+			<Select bind:value={form.universityId} label="University" required placeholder="Select university" options={universityOptions} />
+			{#if universities.isSuccess && !universityOptions.length}
+				<span class="text-xs text-neutral-500">No active universities in {ui.business} yet.</span>
+			{/if}
 		</div>
 	</fieldset>
 

@@ -13,6 +13,20 @@ const day = new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: 'short', y
 /** "2026-10-15" → "15 Oct 2026", the date style used across the Figma file. */
 export const formatDate = (iso: string | null | undefined) => (iso ? day.format(new Date(iso)) : '');
 
+const relative = new Intl.RelativeTimeFormat('en', { numeric: 'auto' });
+
+/** "Just now", "5 minutes ago", "yesterday"… then a date after a week. */
+export function formatRelative(iso: string | null | undefined) {
+	if (!iso) return 'Never';
+	const seconds = (new Date(iso).getTime() - Date.now()) / 1000;
+	const abs = Math.abs(seconds);
+	if (abs < 60) return 'Just now';
+	if (abs < 3600) return relative.format(Math.round(seconds / 60), 'minute');
+	if (abs < 86_400) return relative.format(Math.round(seconds / 3600), 'hour');
+	if (abs < 7 * 86_400) return relative.format(Math.round(seconds / 86_400), 'day');
+	return formatDate(iso.slice(0, 10));
+}
+
 export const initials = (name: string) =>
 	name
 		.split(/\s+/)

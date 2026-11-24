@@ -10,14 +10,13 @@
 		{ key: 'name', label: 'Consultant Name' },
 		{ key: 'country', label: 'Country' },
 		{ key: 'email', label: 'Email' },
-		{ key: 'business', label: 'Business' },
 		{ key: 'company', label: 'Company' },
 		{ key: 'status', label: 'Status', format: 'status' },
 		{ key: 'id', label: 'Action', format: 'view' }
 	];
 </script>
 
-<svelte:head><title>Consultants · PURE Education ERP</title></svelte:head>
+<svelte:head><title>Consultants · PURE ERP</title></svelte:head>
 
 <ResourcePage
 	module={MODULES.crm}

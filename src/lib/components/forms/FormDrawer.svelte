@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { FormField } from '#lib/constants/forms.ts';
+	import { createBusinessesQuery } from '#lib/queries/dashboard.ts';
 	import { toPayload, validate, type FormErrors, type FormValues } from '#lib/utils/validation.ts';
 	import Button from '../ui/button/Button.svelte';
 	import Input from '../ui/input/Input.svelte';
@@ -34,6 +35,10 @@
 		placement = 'drawer',
 		width = 564
 	}: Props = $props();
+
+	// Business dropdowns list the business units from Company Management.
+	const businesses = createBusinessesQuery();
+	const optionsFor = (f: FormField) => (f.source === 'businesses' ? (businesses.data ?? []).map((b) => b.name) : (f.options ?? []));
 
 	const blank = () => Object.fromEntries(fields.map((f) => [f.name, initial[f.name] ?? ''])) as FormValues;
 	let values = $state<FormValues>(blank());
@@ -77,7 +82,7 @@
 						bind:value={values[f.name]}
 						label={f.label}
 						required={f.required}
-						options={f.options ?? []}
+						options={optionsFor(f)}
 						placeholder={`Select ${f.label.toLowerCase()}`}
 						error={liveErrors[f.name]}
 					/>

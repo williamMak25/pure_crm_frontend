@@ -38,6 +38,7 @@ export interface ModuleTab {
 export const MODULE_TABS = {
 	crm: [
 		{ label: 'Contact List', href: '/crm/contacts' },
+		{ label: 'Leads', href: '/crm/leads' },
 		{ label: 'Pipeline', href: '/crm/pipeline' },
 		{ label: 'Universities', href: '/crm/universities' },
 		{ label: 'Consultant', href: '/crm/consultants' }

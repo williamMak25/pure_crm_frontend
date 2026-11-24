@@ -14,26 +14,24 @@
 	import { debounced } from '#lib/utils/debounce.svelte.ts';
 
 	let search = $state('');
-	let business = $state('');
 	let status = $state('');
 	let createOpen = $state(false);
 	const term = debounced(() => search);
 
-	const filterKey = $derived(JSON.stringify([term.current, business, status]));
+	const filterKey = $derived(JSON.stringify([term.current, status]));
 	let pageState = $state({ key: '', page: 1 });
 	const page = $derived(pageState.key === filterKey ? pageState.page : 1);
 
-	const boards = createBoardsQuery(() => ({ page, pageSize: 9, search: term.current, business, status }));
+	const boards = createBoardsQuery(() => ({ page, pageSize: 9, search: term.current, status }));
 
-	const businessItems = [{ value: '', label: 'All Business' }, ...['PURE Education', 'Anime House', 'GPM'].map((v) => ({ value: v, label: v }))];
 	const statusItems = [{ value: '', label: 'All Status' }, ...['Planning', 'In Progress', 'Completed'].map((v) => ({ value: v, label: v }))];
 	const filterBtn = 'inline-flex h-[38px] items-center gap-1.5 rounded-lg border border-neutral-200 bg-white px-3 text-sm text-neutral-700 hover:bg-neutral-50';
 </script>
 
-<svelte:head><title>Project &amp; Board · PURE Education ERP</title></svelte:head>
+<svelte:head><title>Project &amp; Board · PURE ERP</title></svelte:head>
 
 <div class="flex flex-col gap-4">
-	<PageHeader title="Project & Board" description="Manage projects and track team progress across all businesses." divider>
+	<PageHeader title="Project & Board" description="Manage projects and track team progress in this company." divider>
 		{#snippet actions()}
 			<Button size="lg" icon="plus" onclick={() => (createOpen = true)}>Create Board</Button>
 		{/snippet}
@@ -42,9 +40,6 @@
 	<div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 		<Input bind:value={search} icon="search" placeholder="Search board ..." aria-label="Search board" type="search" class="w-full sm:w-[330px]" inputClass="h-[38px]!" />
 		<div class="flex gap-3">
-			<Dropdown items={businessItems} selected={business} onselect={(v) => (business = v)} triggerClass={filterBtn} triggerLabel="Filter by business">
-				{#snippet trigger()}{business || 'All Business'}<Icon name="chevronDown" size={18} />{/snippet}
-			</Dropdown>
 			<Dropdown items={statusItems} selected={status} onselect={(v) => (status = v)} triggerClass={filterBtn} triggerLabel="Filter by status">
 				{#snippet trigger()}{status || 'Status'}<Icon name="chevronDown" size={18} />{/snippet}
 			</Dropdown>

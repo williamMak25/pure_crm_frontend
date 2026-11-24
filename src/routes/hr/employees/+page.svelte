@@ -18,7 +18,7 @@
 	];
 </script>
 
-<svelte:head><title>Employees · PURE Education ERP</title></svelte:head>
+<svelte:head><title>Employees · PURE ERP</title></svelte:head>
 
 <ResourcePage
 	module={MODULES.hr}

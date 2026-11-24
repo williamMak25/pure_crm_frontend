@@ -38,7 +38,7 @@
 	);
 </script>
 
-<svelte:head><title>{quotation.data?.quotationNo ?? 'Quotation'} · Quotation Details · PURE Education ERP</title></svelte:head>
+<svelte:head><title>{quotation.data?.quotationNo ?? 'Quotation'} · Quotation Details · PURE ERP</title></svelte:head>
 
 {#snippet field(label: string, value: string, valueClass = 'text-neutral-800')}
 	<div class="flex flex-col gap-1.5">

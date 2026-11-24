@@ -39,7 +39,12 @@ export type Status =
 	| 'Late'
 	| 'On Leave'
 	| 'Income'
-	| 'Expense';
+	| 'Expense'
+	| 'Open'
+	| 'Contacted'
+	| 'New'
+	| 'In Pipeline'
+	| 'Lost';
 
 export interface Business {
 	id: ID;
@@ -58,7 +63,10 @@ export interface UserSummary {
 /** GET /me and POST /auth/login. `permissions` maps a module to its allowed actions. */
 export interface CurrentUser extends UserSummary {
 	isSuperuser: boolean;
+	/** Allowed actions per module in `company`. Roles are per company. */
 	permissions: Record<string, PermissionAction[]>;
+	/** The company these apply to (the switcher's selection). */
+	company: string | null;
 }
 
 /* ---------- Dashboard ---------- */
@@ -135,6 +143,27 @@ export interface Contact {
 	notes: string | null;
 }
 
+export type LeadStatus = 'Open' | 'Contacted' | 'New' | 'In Pipeline' | 'Lost';
+
+/** Leads tab. Setting the status to "New" moves the lead into the pipeline ("In Pipeline"). */
+export interface Lead {
+	id: ID;
+	name: string;
+	company: string | null;
+	email: string | null;
+	phone: string | null;
+	business: string;
+	businessId: ID;
+	owner: string | null;
+	ownerId: ID | null;
+	followUpDate: string | null;
+	status: LeadStatus;
+	notes: string | null;
+	/** Its pipeline card once "In Pipeline". */
+	dealId: ID | null;
+	stage: string | null;
+}
+
 export interface University {
 	id: ID;
 	name: string;
@@ -190,10 +219,11 @@ export interface DealDetail extends Deal {
 	consultant: Ref | null;
 	/** ISO datetime ("Created On"). */
 	openedAt: string;
-	universities: Ref[];
+	/** One university per lead. */
+	university: Ref | null;
 }
 
-export interface DealUpdate extends Partial<Omit<DealInput, 'email' | 'phone' | 'socialMediaLink' | 'consultantId'>> {
+export interface DealUpdate extends Partial<Omit<DealInput, 'email' | 'phone' | 'socialMediaLink' | 'consultantId' | 'universityId'>> {
 	stageId?: ID;
 	position?: number;
 	contact?: string;
@@ -202,7 +232,7 @@ export interface DealUpdate extends Partial<Omit<DealInput, 'email' | 'phone' | 
 	socialMediaLink?: string | null;
 	consultantId?: ID | null;
 	openedAt?: string;
-	universityIds?: ID[];
+	universityId?: ID | null;
 }
 
 export type DealMessageKind = 'message' | 'note';
@@ -244,7 +274,7 @@ export interface DealInput {
 	owner?: string;
 	socialMediaLink?: string;
 	consultantId?: ID;
-	universityIds?: ID[];
+	universityId?: ID;
 }
 
 export interface PipelineStage {
@@ -565,6 +595,8 @@ export interface Role {
 	name: string;
 	description: string;
 	users: number;
+	/** The built-in Admin role: full access, can't be edited. */
+	isSystem: boolean;
 }
 
 export interface ModulePermission {
@@ -579,9 +611,11 @@ export interface Branch {
 	phone: string;
 }
 
+/** The selected company (Company Management). Each switcher entry is a separate company. */
 export interface Company {
 	id: ID;
 	name: string;
+	slug: string;
 	email: string;
 	phone: string;
 	address: string;
@@ -589,6 +623,8 @@ export interface Company {
 	timezone: string;
 	hasBranches: boolean;
 	branches: Branch[];
+	/** People who belong to it (read-only). */
+	members: number;
 }
 
 export interface AppUser {
@@ -596,19 +632,39 @@ export interface AppUser {
 	name: string;
 	email: string;
 	phones: string[];
+	/** Role in the selected company. */
 	role: string;
-	business: string;
-	avatar?: string;
+	roleId: ID | null;
+	/** Every company the person belongs to. */
+	companies: string[];
+	avatar: string | null;
 	status: Status;
-	lastActive: string;
+	/** ISO datetime, null if they never signed in. */
+	lastActive: string | null;
+	isSuperuser: boolean;
 }
 
 /** Settings → User Management → user detail. Access comes from the role's permission matrix. */
 export interface AppUserDetail extends AppUser {
-	roleId: ID;
-	businesses: string[];
-	defaultBusiness: string;
+	/** What the role allows in the selected company. */
 	permissions: ModulePermission[];
+}
+
+/** After "Add User" or "Reset password": the password is shown once (there is no email service yet). */
+export interface UserWithPassword {
+	user: AppUserDetail;
+	/** Null when an existing account joined this company (they keep their password). */
+	temporaryPassword: string | null;
+	existingAccount: boolean;
+}
+
+export interface UserUpdate {
+	name?: string;
+	phones?: string[];
+	/** Role in the selected company. */
+	roleId?: ID;
+	/** Account-wide: super admins only. */
+	status?: 'Active' | 'Inactive' | 'Pending';
 }
 
 export interface SecuritySettings {
